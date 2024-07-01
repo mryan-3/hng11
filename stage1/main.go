@@ -62,8 +62,8 @@ func getWeatherData(city string) (WeatherData, error) {
 }
 
 func main() {
-
 	app := fiber.New()
+    port := os.Getenv("PORT")
 
 	app.Get("/api/hello", func(c *fiber.Ctx) error {
 		visitorName := c.Query("visitor_name")
@@ -90,5 +90,6 @@ func main() {
 
 	})
 
-	app.Listen(":5000")
+    app.Listen(":" + port)
 }
+
