@@ -28,7 +28,7 @@ type WeatherData struct {
 func getWeatherData(city string) (WeatherData, error) {
 	q := city
 
-    apiKey := os.Getenv("WEATHER_API_KEY")
+    apiKey := "96596fc209774812975194030240107"
     if apiKey == "" {
         return WeatherData{}, fmt.Errorf("WEATHER_API_KEY environment variable not set")
     }
