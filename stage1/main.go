@@ -75,7 +75,7 @@ func main() {
 		weather, _ := getWeatherData(location.City)
 		temperature := weather.Current.TempC
 
-		greeting := fmt.Sprintf("Hello, %s! The temperature is %.2f degrees Celsius in %s.", visitorName, temperature, location.City)
+		greeting := fmt.Sprintf("Hello, %s! The temperature is %.2f degrees Celsius in %s", visitorName, temperature, location.City)
 
 		response := fiber.Map{
 			"client_ip": clientIp[0],
