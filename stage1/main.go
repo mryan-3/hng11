@@ -79,7 +79,7 @@ func main() {
 		greeting := fmt.Sprintf("Hello, %s! The temperature is %.2f°C in %s.", visitorName, temperature, location.City)
 
 		response := fiber.Map{
-			"client_ip": clientIp,
+			"client_ip": clientIp[0],
 			"location":  location.City,
 			"greeting":  greeting,
 		}
