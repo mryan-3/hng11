@@ -66,7 +66,9 @@ func main() {
 
 		clientIp := c.IPs()
 
-		location, err := goip.NewClient().GetLocation()
+        IP := goip.NewClient()
+		location, err := IP.GetLocationForIp(clientIp[0])
+
 		if err != nil {
 			return c.Status(500).SendString("Error getting location: " + err.Error())
 		}
