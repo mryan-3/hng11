@@ -59,6 +59,7 @@ func main() {
 	app := fiber.New()
     godotenv.Load()
     port := os.Getenv("PORT")
+    fmt.Println(port)
 
 	app.Get("/api/hello", func(c *fiber.Ctx) error {
 		visitorName := c.Query("visitor_name")
