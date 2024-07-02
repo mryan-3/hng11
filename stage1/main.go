@@ -3,20 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-    "os"
-    "github.com/joho/godotenv"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jpiontek/go-ip-api"
+	"io"
+	"net/http"
+	"os"
 )
-
-func init() {
-    err := godotenv.Load()
-    if err != nil {
-        panic("Error loading .env file")
-    }
-}
 
 type WeatherData struct {
 	Location struct {
@@ -32,12 +24,19 @@ type WeatherData struct {
 }
 
 func getWeatherData(city string) (WeatherData, error) {
+
+	requiredEnvVars := []string{"PORT", "WEATHER_API_KEY"}
+	for _, envVar := range requiredEnvVars {
+		if os.Getenv(envVar) == "" {
+			panic(fmt.Sprintf("Required environment variable %s is not set", envVar))
+		}
+	}
 	q := city
 
-    apiKey := os.Getenv("WEATHER_API_KEY")
-    if apiKey == "" {
-        return WeatherData{}, fmt.Errorf("WEATHER_API_KEY environment variable not set")
-    }
+	apiKey := os.Getenv("WEATHER_API_KEY")
+	if apiKey == "" {
+		return WeatherData{}, fmt.Errorf("WEATHER_API_KEY environment variable not set")
+	}
 
 	url := "http://api.weatherapi.com/v1/forecast.json?key=" + apiKey + "&q=" + q + "&days=1&aqi=no&alerts=no"
 
@@ -63,7 +62,7 @@ func getWeatherData(city string) (WeatherData, error) {
 
 func main() {
 	app := fiber.New()
-    port := os.Getenv("PORT")
+	port := os.Getenv("PORT")
 
 	app.Get("/api/hello", func(c *fiber.Ctx) error {
 		visitorName := c.Query("visitor_name")
@@ -90,6 +89,5 @@ func main() {
 
 	})
 
-    app.Listen(":" + port)
+	app.Listen(":" + port)
 }
-
