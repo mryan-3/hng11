@@ -6,10 +6,17 @@ import (
 	"io"
 	"net/http"
     "os"
+    "github.com/joho/godotenv"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jpiontek/go-ip-api"
 )
 
+func init() {
+    err := godotenv.Load()
+    if err != nil {
+        panic("Error loading .env file")
+    }
+}
 
 type WeatherData struct {
 	Location struct {
