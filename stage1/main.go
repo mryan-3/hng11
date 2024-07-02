@@ -28,7 +28,7 @@ type WeatherData struct {
 func getWeatherData(city string) (WeatherData, error) {
 	q := city
 
-    apiKey := "96596fc209774812975194030240107"
+    apiKey := os.Getenv("WEATHER_API_KEY")
     if apiKey == "" {
         return WeatherData{}, fmt.Errorf("WEATHER_API_KEY environment variable not set")
     }
@@ -64,7 +64,7 @@ func main() {
 	app.Get("/api/hello", func(c *fiber.Ctx) error {
 		visitorName := c.Query("visitor_name")
 
-		clientIp := c.IP()
+		clientIp := c.IPs()
 
 		location, err := goip.NewClient().GetLocation()
 		if err != nil {
@@ -77,7 +77,7 @@ func main() {
 		greeting := fmt.Sprintf("Hello, %s! The temperature is %.2f°C in %s.", visitorName, temperature, location.City)
 
 		response := fiber.Map{
-			"client_ip": clientIp,
+			"client_ip": clientIp[1],
 			"location":  location.City,
 			"greeting":  greeting,
 		}
