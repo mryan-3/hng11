@@ -7,14 +7,13 @@ import (
 
 
 func SetUpRoutes(app *fiber.App) {
-	api := app.Group("/api")
+    api := app.Group("/api")
+    user := api.Group("/users")
 
-	// Version 1
-	v1 := api.Group("/v1")
+    app.Post("/auth/register", userControllers.CreateUser)
+    app.Post("/auth/login", userControllers.LoginUser)
 
 	// User routes
-	user := v1.Group("/user")
-    user.Post("/auth/register", userControllers.CreateUser)
-    user.Post("/auth/login", userControllers.LoginUser)
+    user.Get("/:id", userControllers.GetUser)
 
 }

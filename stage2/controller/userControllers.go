@@ -219,3 +219,42 @@ func LoginUser(c *fiber.Ctx) error {
 
 	return c.Status(http.StatusCreated).JSON(response)
 }
+
+// Get a user
+// route GET /api/v1/user/:id
+func GetUser(c *fiber.Ctx) error {
+	userId := c.Params("id")
+
+	if userId == "" {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":  "error",
+			"message": "Missing Param",
+		})
+	}
+
+	var user models.User
+
+	if err := database.DB.Db.Where("user_id = ?", userId).First(&user).Error; err != nil {
+		return c.Status(http.StatusNotFound).JSON(&fiber.Map{
+			"status":     "error",
+			"statusCode": http.StatusNotFound,
+			"message":    "User not found",
+		})
+	}
+
+	response := fiber.Map{
+		"status":  "success",
+		"message": "User found",
+		"data": fiber.Map{
+			"user": fiber.Map{
+				"userId":    user.UserID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+				"phone":     user.Phone,
+			},
+		},
+	}
+
+	return c.Status(http.StatusOK).JSON(response)
+}
