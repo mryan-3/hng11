@@ -12,7 +12,7 @@ type ValidationError struct {
 }
 
 
-func ValidateUser(data interface{}) []ValidationError {
+func ValidateStruct(data interface{}) []ValidationError {
     var errors []ValidationError
     validate := validator.New()
 

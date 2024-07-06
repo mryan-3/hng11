@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -17,12 +18,14 @@ import (
 // route POST /api/v1/user/auth/register
 func CreateUser(c *fiber.Ctx) error {
 	type ReqBody struct {
-		FirstName string `json:"firstName"`
-		LastName  string `json:"lastName"`
-		Email     string `json:"email"`
-		Password  string `json:"password"`
+		FirstName string `json:"firstName" validate:"required"`
+		LastName  string `json:"lastName" validate:"required"`
+		Email     string `json:"email" validate:"required,email"`
+		Password  string `json:"password" validate:"required"`
 		Phone     string `json:"phone"`
 	}
+
+    fmt.Println("Creating user ...")
 
 	body := new(ReqBody)
 
@@ -30,7 +33,7 @@ func CreateUser(c *fiber.Ctx) error {
 		return c.Status(400).JSON(err.Error())
 	}
 
-	validationErrors := validation.ValidateUser(body)
+	validationErrors := validation.ValidateStruct(body)
 
 	if len(validationErrors) > 0 {
 		response := fiber.Map{"errors": validationErrors}
@@ -74,8 +77,9 @@ func CreateUser(c *fiber.Ctx) error {
 	if result.Error != nil {
 		if strings.Contains(result.Error.Error(), "duplicate key value") {
 			return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
-				"status":  "error",
-				"message": "User already exists",
+				"status":  "Bad Request",
+                "statusCode":  http.StatusBadRequest,
+				"message": "Registration unsuccessful",
 			})
 		}
 
