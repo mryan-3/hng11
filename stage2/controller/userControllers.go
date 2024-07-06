@@ -12,6 +12,7 @@ import (
 	"github.com/mryan-3/hng11/stage2/models"
 	"github.com/mryan-3/hng11/stage2/utils"
 	"github.com/mryan-3/hng11/stage2/validation"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Create User
@@ -25,12 +26,16 @@ func CreateUser(c *fiber.Ctx) error {
 		Phone     string `json:"phone"`
 	}
 
-    fmt.Println("Creating user ...")
+	fmt.Println("Creating user ...")
 
 	body := new(ReqBody)
 
 	if err := c.BodyParser(body); err != nil {
-		return c.Status(400).JSON(err.Error())
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad Request",
+			"statusCode": http.StatusBadRequest,
+			"message":    "Registration unsuccessful",
+		})
 	}
 
 	validationErrors := validation.ValidateStruct(body)
@@ -46,7 +51,7 @@ func CreateUser(c *fiber.Ctx) error {
 	if hashingError != nil {
 		return c.Status(http.StatusInternalServerError).JSON(&fiber.Map{
 			"status":  "error",
-			"message": "An error occurred while creating account",
+			"message": "An error occcured while hashing password",
 		})
 	}
 
@@ -77,18 +82,17 @@ func CreateUser(c *fiber.Ctx) error {
 	if result.Error != nil {
 		if strings.Contains(result.Error.Error(), "duplicate key value") {
 			return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
-				"status":  "Bad Request",
-                "statusCode":  http.StatusBadRequest,
-				"message": "Registration unsuccessful",
+				"status":     "Bad Request",
+				"statusCode": http.StatusBadRequest,
+				"message":    "Registration unsuccessful",
 			})
 		}
 
 		return c.Status(http.StatusInternalServerError).JSON("An error occurred while creating account")
 	}
 
-
-    // Generate token
-    token, err := utils.SignJwtToken(user.UserID.String())
+	// Generate token
+	token, err := utils.SignJwtToken(user.UserID.String())
 
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(&fiber.Map{
@@ -110,20 +114,108 @@ func CreateUser(c *fiber.Ctx) error {
 	// Set cookie
 	c.Cookie(cookie)
 
-    response := fiber.Map{
-        "status":  "success",
-        "message": "Regstration successful",
-        "data":  fiber.Map{
-            "accessToken": token,
-            "user": fiber.Map{
-               "userId": user.UserID,
-               "firstName": user.FirstName,
-               "lastName": user.LastName,
-               "email": user.Email,
-               "phone": user.Phone,
-            },
-        },
-    }
+	response := fiber.Map{
+		"status":  "success",
+		"message": "Regstration successful",
+		"data": fiber.Map{
+			"accessToken": token,
+			"user": fiber.Map{
+				"userId":    user.UserID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+				"phone":     user.Phone,
+			},
+		},
+	}
 
-    return c.Status(http.StatusCreated).JSON(response)
+	return c.Status(http.StatusCreated).JSON(response)
+}
+
+// Log in a user
+// route POST /api/v1/user/auth/login
+func LoginUser(c *fiber.Ctx) error {
+	type ReqBody struct {
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required"`
+	}
+
+	body := new(ReqBody)
+
+	if err := c.BodyParser(body); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad request",
+			"message":    "Authentication failed",
+			"statusCode": http.StatusBadRequest,
+		})
+	}
+
+	validationErrors := validation.ValidateStruct(body)
+
+	if len(validationErrors) > 0 {
+		response := fiber.Map{"errors": validationErrors}
+		return c.Status(http.StatusUnprocessableEntity).JSON(response)
+	}
+
+	var user models.User
+	if err := database.DB.Db.Where("email = ?", body.Email).First(&user).Error; err != nil {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad request",
+			"message":    "Authentication failed",
+			"statusCode": http.StatusBadRequest,
+		})
+	}
+
+	// Compare password
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
+
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad request",
+			"message":    "Authentication failed",
+			"statusCode": http.StatusBadRequest,
+		})
+
+	}
+
+	// Generate JWT token
+	token, err := utils.SignJwtToken(user.UserID.String())
+
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"status":  "error",
+			"message": "An error occurred while generating token!",
+		})
+
+	}
+
+	// Create cookie
+	cookie := new(fiber.Cookie)
+	cookie.Name = "user"
+	cookie.Value = token
+	cookie.HTTPOnly = utils.Check(os.Getenv("APP_ENV") == "prod", true, false)
+	cookie.SameSite = utils.Check(os.Getenv("APP_ENV") == "prod", "strict", "None")
+	cookie.Secure = utils.Check(os.Getenv("APP_ENV") == "prod", true, false)
+	cookie.Expires = time.Now().Add(24 * time.Hour * 7)
+
+	// Set cookie
+	c.Cookie(cookie)
+
+	response := fiber.Map{
+		"status":  "success",
+		"message": "Login successful",
+		"data": fiber.Map{
+			"accessToken": token,
+			"user": fiber.Map{
+				"userId":    user.UserID,
+				"firstName": user.FirstName,
+				"lastName":  user.LastName,
+				"email":     user.Email,
+				"phone":     user.Phone,
+			},
+		},
+	}
+
+	return c.Status(http.StatusCreated).JSON(response)
 }

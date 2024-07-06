@@ -15,5 +15,6 @@ func SetUpRoutes(app *fiber.App) {
 	// User routes
 	user := v1.Group("/user")
     user.Post("/auth/register", userControllers.CreateUser)
+    user.Post("/auth/login", userControllers.LoginUser)
 
 }
