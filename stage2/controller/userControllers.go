@@ -58,15 +58,15 @@ func CreateUser(c *fiber.Ctx) error {
 
 	orgName := body.FirstName + "'s" + " Organisation"
 
-    // Create an organisation
-    org := models.Organisation{
-        Name:  orgName,
-    }
+	// Create an organisation
+	org := models.Organisation{
+		Name: orgName,
+	}
 
-    // Create organization and associate user
-    if err := database.DB.Db.Create(&org).Error; err != nil {
-        return c.Status(http.StatusInternalServerError).SendString("Failed to create organization")
-    }
+	// Create organization and associate user
+	if err := database.DB.Db.Create(&org).Error; err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Failed to create organization")
+	}
 	// Create user
 	user := models.User{
 		FirstName: body.FirstName,
@@ -90,7 +90,6 @@ func CreateUser(c *fiber.Ctx) error {
 
 		return c.Status(http.StatusInternalServerError).JSON("An error occurred while creating account")
 	}
-
 
 	// Add user to organisation
 	if err := database.DB.Db.Model(&org).Association("Users").Append(&user).Error; err != nil {
@@ -313,4 +312,46 @@ func GetUserOrganisations(c *fiber.Ctx) error {
 
 	return c.Status(http.StatusOK).JSON(response)
 
+}
+
+
+// Get a single organisation
+// route GET /api/organisations/:orgId
+func GetSingleOrganisation(c *fiber.Ctx) error {
+	type OrganizationResponse struct {
+		OrgID       string `json:"orgId"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+    orgId := c.Params("orgId")
+
+    if orgId == "" {
+        return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+            "status":  "error",
+            "message": "Missing Param",
+        })
+    }
+
+    var org models.Organisation
+    if err := database.DB.Db.Where("id = ?", orgId).First(&org).Error; err != nil {
+        return c.Status(http.StatusNotFound).JSON(&fiber.Map{
+            "status":     "error",
+            "statusCode": http.StatusNotFound,
+            "message":    "Organisation not found",
+        })
+    }
+
+    organizationResponse := OrganizationResponse{
+        OrgID:       org.ID.String(),
+        Name:        org.Name,
+        Description: org.Description,
+    }
+
+    response := fiber.Map{
+        "status":  "success",
+        "message": "Organisation found",
+        "data": organizationResponse,
+    }
+
+    return c.Status(http.StatusOK).JSON(response)
 }
