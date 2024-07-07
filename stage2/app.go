@@ -9,7 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/mryan-3/hng11/stage2/database"
-	"github.com/mryan-3/hng11/stage2/initializer"
 	"github.com/mryan-3/hng11/stage2/routes"
 )
 
