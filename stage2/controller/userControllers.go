@@ -17,7 +17,7 @@ import (
 )
 
 // Create User
-// route POST /api/v1/user/auth/register
+// route POST /auth/register
 func CreateUser(c *fiber.Ctx) error {
 	type ReqBody struct {
 		FirstName string `json:"firstName" validate:"required"`
@@ -88,7 +88,7 @@ func CreateUser(c *fiber.Ctx) error {
 			})
 		}
 
-		return c.Status(http.StatusInternalServerError).JSON("An error occurred while creating account")
+		return c.Status(http.StatusInternalServerError).JSON("An error occurred while creating user")
 	}
 
 	// Add user to organisation
@@ -103,7 +103,7 @@ func CreateUser(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(&fiber.Map{
 			"status":  "error",
-			"message": "An error occurred while creating account",
+			"message": "An error occurred while generating token!",
 		})
 
 	}
@@ -139,7 +139,7 @@ func CreateUser(c *fiber.Ctx) error {
 }
 
 // Log in a user
-// route POST /api/v1/user/auth/login
+// route POST /auth/login
 func LoginUser(c *fiber.Ctx) error {
 	type ReqBody struct {
 		Email    string `json:"email" validate:"required,email"`
@@ -227,7 +227,7 @@ func LoginUser(c *fiber.Ctx) error {
 }
 
 // Get a user
-// route GET /api/user/:id
+// route GET /api/users/:id
 func GetUser(c *fiber.Ctx) error {
 	userId := c.Params("id")
 
@@ -320,7 +320,7 @@ func GetUserOrganisations(c *fiber.Ctx) error {
 func GetSingleOrganisation(c *fiber.Ctx) error {
 	type OrganizationResponse struct {
 		OrgID       string `json:"orgId"`
-		Name        string `json:"name"`
+		Name        string `json:"name" validate:"required"`
 		Description string `json:"description"`
 	}
 	orgId := c.Params("orgId")
@@ -453,7 +453,7 @@ func AddUserToOrganisation(c *fiber.Ctx) error {
 		})
 	}
 
-    userId := body.UserId
+	userId := body.UserId
 
 	var org models.Organisation
 	if err := database.DB.Db.Where("id = ?", orgId).First(&org).Error; err != nil {
