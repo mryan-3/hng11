@@ -91,10 +91,12 @@ func CreateUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusInternalServerError).JSON("An error occurred while creating account")
 	}
 
-	// Add user to organisation
-	if err := database.DB.Db.Model(&org).Association("Users").Append(&user).Error; err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Failed to add user to organization")
-	}
+    // Add user to organisation
+    database.DB.Db.Model(&org).Association("Users").Append(&user)
+
+    // Add organisation to user
+    database.DB.Db.Model(&user).Association("Organisations").Append(&org)
+
 
 	// Generate token
 	token, err := utils.SignJwtToken(user.UserID.String())
@@ -314,7 +316,6 @@ func GetUserOrganisations(c *fiber.Ctx) error {
 
 }
 
-
 // Get a single organisation
 // route GET /api/organisations/:orgId
 func GetSingleOrganisation(c *fiber.Ctx) error {
@@ -323,35 +324,106 @@ func GetSingleOrganisation(c *fiber.Ctx) error {
 		Name        string `json:"name"`
 		Description string `json:"description"`
 	}
-    orgId := c.Params("orgId")
+	orgId := c.Params("orgId")
 
-    if orgId == "" {
-        return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
-            "status":  "error",
-            "message": "Missing Param",
-        })
-    }
+	if orgId == "" {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":  "error",
+			"message": "Missing Param",
+		})
+	}
 
-    var org models.Organisation
-    if err := database.DB.Db.Where("id = ?", orgId).First(&org).Error; err != nil {
-        return c.Status(http.StatusNotFound).JSON(&fiber.Map{
-            "status":     "error",
-            "statusCode": http.StatusNotFound,
-            "message":    "Organisation not found",
-        })
-    }
+	var org models.Organisation
+	if err := database.DB.Db.Where("id = ?", orgId).First(&org).Error; err != nil {
+		return c.Status(http.StatusNotFound).JSON(&fiber.Map{
+			"status":     "error",
+			"statusCode": http.StatusNotFound,
+			"message":    "Organisation not found",
+		})
+	}
 
-    organizationResponse := OrganizationResponse{
-        OrgID:       org.ID.String(),
-        Name:        org.Name,
-        Description: org.Description,
-    }
+	organizationResponse := OrganizationResponse{
+		OrgID:       org.ID.String(),
+		Name:        org.Name,
+		Description: org.Description,
+	}
 
-    response := fiber.Map{
-        "status":  "success",
-        "message": "Organisation found",
-        "data": organizationResponse,
-    }
+	response := fiber.Map{
+		"status":  "success",
+		"message": "Organisation found",
+		"data":    organizationResponse,
+	}
 
-    return c.Status(http.StatusOK).JSON(response)
+	return c.Status(http.StatusOK).JSON(response)
+}
+
+// Create an organisation
+// route POST /api/organisations
+func CreateOrganisation(c *fiber.Ctx) error {
+	type ReqBody struct {
+		Name        string `json:"name" validate:"required"`
+		Description string `json:"description" `
+	}
+
+	// Find the user who created the organisation
+	userId := c.Locals("userId").(string)
+	var user models.User
+	if err := database.DB.Db.Where("user_id = ?", userId).First(&user).Error; err != nil {
+		return c.Status(http.StatusNotFound).JSON(&fiber.Map{
+			"status":     "error",
+			"statusCode": http.StatusNotFound,
+			"message":    "User not found",
+		})
+	}
+
+	body := new(ReqBody)
+
+	if err := c.BodyParser(body); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad request",
+			"message":    "Organisation creation failed",
+			"statusCode": http.StatusBadRequest,
+		})
+	}
+
+	validationErrors := validation.ValidateStruct(body)
+
+	if len(validationErrors) > 0 {
+		response := fiber.Map{"errors": validationErrors}
+		return c.Status(http.StatusUnprocessableEntity).JSON(response)
+	}
+
+	org := models.Organisation{
+		Name:        body.Name,
+		Description: body.Description,
+	}
+
+	if err := database.DB.Db.Create(&org).Error; err != nil {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad request",
+			"message":    "Organisation creation failed",
+			"statusCode": http.StatusBadRequest,
+		})
+	}
+
+	// Add user to organisation
+    database.DB.Db.Model(&user).Association("Organisations").Append(&org)
+
+    fmt.Println("User added to organisation", user.Organisations)
+
+    // Add organisation to user
+    database.DB.Db.Model(&org).Association("Users").Append(&user)
+
+    fmt.Println("Organisation added to user", org.Users)
+
+
+	response := fiber.Map{
+		"status":  "success",
+		"message": "Organisation created",
+		"data": fiber.Map{
+			"orgId": org.ID.String(),
+		},
+	}
+
+	return c.Status(http.StatusCreated).JSON(response)
 }
