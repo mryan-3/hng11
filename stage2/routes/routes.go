@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	userControllers "github.com/mryan-3/hng11/stage2/controller"
+	organisationControllers "github.com/mryan-3/hng11/stage2/controller"
 	"github.com/mryan-3/hng11/stage2/middleware"
 )
 
@@ -15,10 +16,10 @@ func SetUpRoutes(app *fiber.App) {
     app.Post("/auth/login", userControllers.LoginUser)
 
     // User organisation routes
-    api.Get("/organisations", middleware.UserAuth, userControllers.GetUserOrganisations)
-    api.Get("/organisations/:orgId", middleware.UserAuth, userControllers.GetSingleOrganisation)
-    api.Post("/organisations", middleware.UserAuth, userControllers.CreateOrganisation)
-    api.Post("/organisations/:orgId/users", userControllers.AddUserToOrganisation)
+    api.Get("/organisations", middleware.UserAuth, organisationControllers.GetUserOrganisations)
+    api.Get("/organisations/:orgId", middleware.UserAuth, organisationControllers.GetSingleOrganisation)
+    api.Post("/organisations", middleware.UserAuth, organisationControllers.CreateOrganisation)
+    api.Post("/organisations/:orgId/users", organisationControllers.AddUserToOrganisation)
 
 	// User routes
     user.Get("/:id", middleware.UserAuth, userControllers.GetUser)
