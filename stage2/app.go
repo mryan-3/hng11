@@ -17,7 +17,6 @@ import (
 
 func init() {
 	fmt.Println("Initializing the server ...")
-	initializer.LoadEnvVariables()
 	database.ConnectDb()
 }
 
