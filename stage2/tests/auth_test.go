@@ -17,17 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func cleanupDatabase(t *testing.T) {
-	// Drop all tables
-	err := database.DB.Db.Exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public;").Error
-	if err != nil {
-		t.Fatalf("Error cleaning up database: %v", err)
-	}
-
-	// Remigrate all tables
-	database.MigrateDatabase(database.DB.Db)
-}
-
 func setupTestApp() *fiber.App {
 	app := fiber.New()
 
@@ -46,7 +35,7 @@ func TestRegisterEndpoint(t *testing.T) {
 		reqBody := map[string]string{
 			"firstName": "Jill",
 			"lastName":  "Doe",
-			"email":     "jill@example.com",
+			"email":     "rill@example.com",
 			"password":  "password123",
 		}
 		jsonBody, _ := json.Marshal(reqBody)
@@ -58,8 +47,8 @@ func TestRegisterEndpoint(t *testing.T) {
 
 		// Read and log the response body
 		body, _ := io.ReadAll(resp.Body)
-        resp.Body.Close()
-        fmt.Printf("Response Body: %s", string(body))
+		resp.Body.Close()
+		fmt.Printf("Response Body: %s", string(body))
 
 		// Attempt to parse the JSON response
 		var result map[string]interface{}
@@ -77,7 +66,7 @@ func TestRegisterEndpoint(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
 		assert.Equal(t, "Jill", userData["firstName"])
 		assert.Equal(t, "Doe", userData["lastName"])
-		assert.Equal(t, "jill@example.com", userData["email"])
+		assert.Equal(t, "rill@example.com", userData["email"])
 		assert.NotNil(t, data["accessToken"])
 
 		var org models.Organisation
@@ -85,127 +74,175 @@ func TestRegisterEndpoint(t *testing.T) {
 
 		assert.Equal(t, "Jill's Organisation", org.Name)
 		assert.Equal(t, 1, len(org.Users))
-		assert.Equal(t, "jill@example.com", org.Users[0].Email)
+		assert.Equal(t, "rill@example.com", org.Users[0].Email)
 	})
 
-	/*
-		t.Run("Should Log the user in successfully", func(t *testing.T) {
-			// First, register a user
-			registerReqBody := map[string]string{
-				"firstName": "Jan",
-				"lastName":  "Doe",
-				"email":     "jan@example.com",
-				"password":  "password123",
-			}
-			jsonRegisterBody, _ := json.Marshal(registerReqBody)
-			registerReq := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(jsonRegisterBody))
-			registerReq.Header.Set("Content-Type", "application/json")
+	t.Run("Should Log the user in successfully", func(t *testing.T) {
+		// First, register a user
+		registerReqBody := map[string]string{
+			"firstName": "Jan",
+			"lastName":  "Doe",
+			"email":     "jin@example.com",
+			"password":  "password123",
+		}
+		jsonRegisterBody, _ := json.Marshal(registerReqBody)
+		registerReq := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(jsonRegisterBody))
+		registerReq.Header.Set("Content-Type", "application/json")
 
-			app.Test(registerReq)
+		app.Test(registerReq)
 
-			// Now, try to log in
-			loginReqBody := map[string]string{
-				"email":    "jan@example.com",
-				"password": "password123",
-			}
-			jsonLoginBody, _ := json.Marshal(loginReqBody)
-			loginReq := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(jsonLoginBody))
-			loginReq.Header.Set("Content-Type", "application/json")
-			resp, _ := app.Test(loginReq)
+		// Now, try to log in
+		loginReqBody := map[string]string{
+			"email":    "jan@example.com",
+			"password": "password123",
+		}
+		jsonLoginBody, _ := json.Marshal(loginReqBody)
+		loginReq := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(jsonLoginBody))
+		loginReq.Header.Set("Content-Type", "application/json")
+		resp, _ := app.Test(loginReq)
 
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-			var result map[string]interface{}
+		var result map[string]interface{}
 
-			err := json.NewDecoder(resp.Body).Decode(&result)
-			assert.NoError(t, err)
+		err := json.NewDecoder(resp.Body).Decode(&result)
+		assert.NoError(t, err)
 
-			assert.Equal(t, "success", result["status"])
+		assert.Equal(t, "success", result["status"])
 
-			data, ok := result["data"].(map[string]interface{})
-			assert.True(t, ok, "Data field is not a map[string]interface{}")
+		data, ok := result["data"].(map[string]interface{})
+		assert.True(t, ok, "Data field is not a map[string]interface{}")
 
-			user, ok := data["user"].(map[string]interface{})
-			assert.True(t, ok, "User field is not a map[string]interface{}")
+		user, ok := data["user"].(map[string]interface{})
+		assert.True(t, ok, "User field is not a map[string]interface{}")
 
-			assert.NotEmpty(t, user["userId"])
-			assert.NotEmpty(t, user["firstName"])
-			assert.NotEmpty(t, user["lastName"])
-			assert.NotEmpty(t, data["accessToken"])
+		assert.NotEmpty(t, user["userId"])
+		assert.NotEmpty(t, user["firstName"])
+		assert.NotEmpty(t, user["lastName"])
+		assert.NotEmpty(t, data["accessToken"])
 
-		})
+	})
 
-		t.Run("Should Fail If Required Fields Are Missing", func(t *testing.T) {
-			requiredFields := []string{"firstName", "lastName", "email", "password"}
-			for _, field := range requiredFields {
-				reqBody := map[string]string{
-					"firstName": "John",
-					"lastName":  "Doe",
-					"email":     "john@example.com",
-					"password":  "password123",
-				}
-				delete(reqBody, field)
-				jsonBody, _ := json.Marshal(reqBody)
+	t.Run("It Should Fail If Required Fields Are Missing", func(t *testing.T) {
 
-				req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(jsonBody))
+		testCases := []struct {
+			name       string
+			user       map[string]string
+			missingKey string
+		}{
+			{
+				name: "Missing FirstName",
+				user: map[string]string{
+					"lastName": "Doe", "email": "john@example.com", "password": "password123", "phone": "1234567890",
+				},
+				missingKey: "firstName",
+			},
+			{
+				name: "Missing LastName",
+				user: map[string]string{
+					"firstName": "John", "email": "john@example.com", "password": "password123", "phone": "1234567890",
+				},
+				missingKey: "lastName",
+			},
+			{
+				name: "Missing Email",
+				user: map[string]string{
+					"firstName": "John", "lastName": "Doe", "password": "password123", "phone": "1234567890",
+				},
+				missingKey: "email",
+			},
+			{
+				name: "Missing Password",
+				user: map[string]string{
+					"firstName": "John", "lastName": "Doe", "email": "john@example.com", "phone": "1234567890",
+				},
+				missingKey: "password",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				body, _ := json.Marshal(tc.user)
+
+				req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(body))
 				req.Header.Set("Content-Type", "application/json")
-				resp, _ := app.Test(req)
+				resp, err := app.Test(req)
+				if err != nil {
+					t.Fatalf("Failed to perform request: %v", err)
+				}
 
 				assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
 
-				var result map[string]interface{}
-				err := json.NewDecoder(resp.Body).Decode(&result)
-				assert.NoError(t, err)
+				respBody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					t.Fatalf("Failed to read response body: %v", err)
+				}
+				resp.Body.Close()
+				fmt.Printf("Raw Response Body (%s): %s\n", tc.name, string(respBody))
 
-				errors, ok := result["errors"].([]interface{})
-				assert.True(t, ok, "Expected 'errors' field in response to be a slice")
+				if len(respBody) == 0 {
+					t.Fatalf("Response body is empty")
+				}
 
-				errorFound := false
+				var responseBody map[string]interface{}
+				err = json.Unmarshal(respBody, &responseBody)
+				if err != nil {
+					t.Fatalf("Failed to decode response body: %v", err)
+				}
+
+				fmt.Printf("Decoded Response Body (%s): %+v\n", tc.name, responseBody)
+
+				errors, ok := responseBody["errors"].([]interface{})
+				if !ok {
+					t.Fatalf("Response body 'errors' field is not of expected type: %v", responseBody)
+				}
+
 				for _, err := range errors {
-					errObj, ok := err.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					if errMsg, exists := errObj["message"].(string); exists && errMsg == "Field is required" {
-						if fieldName, exists := errObj["field"].(string); exists && fieldName == field {
-							errorFound = true
-							break
+					errorMap := err.(map[string]interface{})
+					field, fieldExists := errorMap["field"].(string)
+					message, messageExists := errorMap["message"].(string)
+					assert.True(t, fieldExists)
+					assert.True(t, messageExists)
+					if fieldExists && messageExists {
+						switch field {
+						case tc.missingKey:
+							assert.Equal(t, fmt.Sprintf("%s is required", field), message)
 						}
 					}
 				}
-				assert.True(t, errorFound, "Expected error message not found for field: "+field)
-			}
-		})
+			})
+		}
+	})
 
-		t.Run("Should Fail if there's Duplicate Email", func(t *testing.T) {
-			reqBody := map[string]string{
-				"firstName": "John",
-				"lastName":  "Doe",
-				"email":     "duplicate@example.com",
-				"password":  "password123",
-			}
-			jsonBody, _ := json.Marshal(reqBody)
+	t.Run("Should Fail if there's Duplicate Email", func(t *testing.T) {
+		reqBody := map[string]string{
+			"firstName": "John",
+			"lastName":  "Doe",
+			"email":     "duplicate@example.com",
+			"password":  "password123",
+		}
+		jsonBody, _ := json.Marshal(reqBody)
 
-			// Register the first user
-			req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(jsonBody))
-			req.Header.Set("Content-Type", "application/json")
-			app.Test(req)
+		// Register the first user
+		req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		app.Test(req)
 
-			// Try to register another user with the same email
-			req = httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(jsonBody))
-			req.Header.Set("Content-Type", "application/json")
-			resp, _ := app.Test(req)
+		// Try to register another user with the same email
+		req = httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		resp, _ := app.Test(req)
 
-			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-			var result map[string]interface{}
-			err := json.NewDecoder(resp.Body).Decode(&result)
-			assert.NoError(t, err)
+		var result map[string]interface{}
+		err := json.NewDecoder(resp.Body).Decode(&result)
+		assert.NoError(t, err)
 
-			assert.Equal(t, "Bad Request", result["status"])
-			assert.Equal(t, "Registration unsuccessful", result["message"])
+		assert.Equal(t, "Bad Request", result["status"])
+		assert.Equal(t, "Registration unsuccessful", result["message"])
 
-		})
-	*/
+	})
+
 }
 
