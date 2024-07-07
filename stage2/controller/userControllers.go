@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/mryan-3/hng11/stage2/database"
 	"github.com/mryan-3/hng11/stage2/models"
 	"github.com/mryan-3/hng11/stage2/utils"
@@ -57,23 +58,22 @@ func CreateUser(c *fiber.Ctx) error {
 
 	orgName := body.FirstName + "'s" + " Organisation"
 
-	// Create an organisation
-	org := models.Organisation{
-		Name: orgName,
-	}
-	// Create organization and associate user
-	if err := database.DB.Db.Create(&org).Error; err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Failed to create organization")
-	}
+    // Create an organisation
+    org := models.Organisation{
+        Name:  orgName,
+    }
 
+    // Create organization and associate user
+    if err := database.DB.Db.Create(&org).Error; err != nil {
+        return c.Status(http.StatusInternalServerError).SendString("Failed to create organization")
+    }
 	// Create user
 	user := models.User{
-		FirstName:     body.FirstName,
-		LastName:      body.LastName,
-		Email:         body.Email,
-		Password:      hashedPassword,
-		Phone:         body.Phone,
-		Organisations: []*models.Organisation{&org},
+		FirstName: body.FirstName,
+		LastName:  body.LastName,
+		Email:     body.Email,
+		Password:  hashedPassword,
+		Phone:     body.Phone,
 	}
 
 	// Create user and organisation
@@ -89,6 +89,12 @@ func CreateUser(c *fiber.Ctx) error {
 		}
 
 		return c.Status(http.StatusInternalServerError).JSON("An error occurred while creating account")
+	}
+
+
+	// Add user to organisation
+	if err := database.DB.Db.Model(&org).Association("Users").Append(&user).Error; err != nil {
+		return c.Status(http.StatusInternalServerError).SendString("Failed to add user to organization")
 	}
 
 	// Generate token
@@ -221,7 +227,7 @@ func LoginUser(c *fiber.Ctx) error {
 }
 
 // Get a user
-// route GET /api/v1/user/:id
+// route GET /api/user/:id
 func GetUser(c *fiber.Ctx) error {
 	userId := c.Params("id")
 
@@ -257,4 +263,54 @@ func GetUser(c *fiber.Ctx) error {
 	}
 
 	return c.Status(http.StatusOK).JSON(response)
+}
+
+// Get a users organisations
+// route GET /api/organisations
+func GetUserOrganisations(c *fiber.Ctx) error {
+
+	type OrganizationResponse struct {
+		OrgID       string `json:"orgId"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	userIdString := c.Locals("userId").(string)
+
+	userId, err := uuid.Parse(userIdString)
+
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":  "error",
+			"message": "Error parsing the doctor ID",
+		})
+	}
+
+	var user models.User
+	if err := database.DB.Db.Preload("Organisations").First(&user, "user_id = ?", userId).Error; err != nil {
+		return c.Status(http.StatusNotFound).JSON(&fiber.Map{
+			"status":     "error",
+			"statusCode": http.StatusNotFound,
+			"message":    "User not found",
+		})
+	}
+
+	var organizationsResponse []OrganizationResponse
+
+	for _, org := range user.Organisations {
+		organizationsResponse = append(organizationsResponse, OrganizationResponse{
+			OrgID:       org.ID.String(),
+			Name:        org.Name,
+			Description: org.Description,
+		})
+	}
+	response := fiber.Map{
+		"status":  "success",
+		"message": "Organisations found",
+		"data": fiber.Map{
+			"organisations": organizationsResponse,
+		},
+	}
+
+	return c.Status(http.StatusOK).JSON(response)
+
 }
