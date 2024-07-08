@@ -64,8 +64,14 @@ func CreateUser(c *fiber.Ctx) error {
 
 	// Create organization and associate user
 	if err := database.DB.Db.Create(&org).Error; err != nil {
-		return c.Status(http.StatusInternalServerError).SendString("Failed to create organization")
+        fmt.Println(err)
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad Request",
+			"statusCode": http.StatusBadRequest,
+			"message":    "Failed to create org",
+		})
 	}
+
 	// Create user
 	user := models.User{
 		FirstName: body.FirstName,
@@ -263,4 +269,3 @@ func GetUser(c *fiber.Ctx) error {
 
 	return c.Status(http.StatusOK).JSON(response)
 }
-
