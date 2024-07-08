@@ -13,7 +13,6 @@ import (
 	"github.com/mryan-3/hng11/stage2/utils"
 	"github.com/mryan-3/hng11/stage2/validation"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 // Create User
@@ -65,7 +64,7 @@ func CreateUser(c *fiber.Ctx) error {
 
 	// Create organization and associate user
 	if err := database.DB.Db.Create(&org).Error; err != nil {
-		fmt.Println(err)
+        fmt.Println(err)
 		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
 			"status":     "Bad Request",
 			"statusCode": http.StatusBadRequest,
@@ -157,7 +156,7 @@ func LoginUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
 			"status":     "Bad request",
-			"message":    "Invalid request payload",
+			"message":    "Authentication failed",
 			"statusCode": http.StatusBadRequest,
 		})
 	}
@@ -171,37 +170,35 @@ func LoginUser(c *fiber.Ctx) error {
 
 	var user models.User
 	if err := database.DB.Db.Where("email = ?", body.Email).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
-				"status":     "Bad request",
-				"message":    "Authentication failed",
-				"statusCode": http.StatusUnauthorized,
-			})
-		}
-		return c.Status(http.StatusInternalServerError).JSON(&fiber.Map{
-			"status":     "error",
-			"message":    "Internal server error",
-			"statusCode": http.StatusInternalServerError,
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"status":     "Bad request",
+			"message":    "Authentication failed",
+			"statusCode": http.StatusBadRequest,
 		})
 	}
 
 	// Compare password
+
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
+
 	if err != nil {
-		return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
+		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
 			"status":     "Bad request",
 			"message":    "Authentication failed",
-			"statusCode": http.StatusUnauthorized,
+			"statusCode": http.StatusBadRequest,
 		})
+
 	}
 
 	// Generate JWT token
 	token, err := utils.SignJwtToken(user.UserID.String())
+
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(&fiber.Map{
 			"status":  "error",
 			"message": "An error occurred while generating token!",
 		})
+
 	}
 
 	// Create cookie
