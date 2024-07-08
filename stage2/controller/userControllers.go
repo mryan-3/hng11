@@ -60,9 +60,7 @@ func CreateUser(c *fiber.Ctx) error {
 	// Create an organisation
 	org := models.Organisation{
 		Name: orgName,
-	}
-
-	// Create organization and associate user
+	} // Create organization and associate user
 	if err := database.DB.Db.Create(&org).Error; err != nil {
         fmt.Println(err)
 		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
@@ -178,14 +176,13 @@ func LoginUser(c *fiber.Ctx) error {
 	}
 
 	// Compare password
-
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
 
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
+		return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
 			"status":     "Bad request",
 			"message":    "Authentication failed",
-			"statusCode": http.StatusBadRequest,
+			"statusCode": http.StatusUnauthorized,
 		})
 
 	}
