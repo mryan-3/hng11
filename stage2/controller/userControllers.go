@@ -269,3 +269,27 @@ func GetUser(c *fiber.Ctx) error {
 
 	return c.Status(http.StatusOK).JSON(response)
 }
+
+
+// Get all users
+// route GET /api/users
+func GetUsers(c *fiber.Ctx) error {
+
+    var users []models.User
+    if err := database.DB.Db.Find(&users).Error; err != nil {
+        return c.Status(http.StatusNotFound).JSON(&fiber.Map{
+            "status":     "error",
+            "statusCode": http.StatusNotFound,
+            "message":    "Users not found",
+        })
+    }
+
+    response := fiber.Map{
+        "status":  "success",
+        "message": "Users found",
+        "data": fiber.Map{
+            "users": users,
+        },
+    }
+    return c.Status(http.StatusOK).JSON(response)
+}

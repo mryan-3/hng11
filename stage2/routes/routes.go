@@ -17,6 +17,7 @@ func SetUpRoutes(app *fiber.App) {
 
     // User organisation routes
     api.Get("/organisations", middleware.UserAuth, organisationControllers.GetUserOrganisations)
+    api.Get("/users", userControllers.GetUsers)
     api.Get("/organisations/:orgId", middleware.UserAuth, organisationControllers.GetSingleOrganisation)
     api.Post("/organisations", middleware.UserAuth, organisationControllers.CreateOrganisation)
     api.Post("/organisations/:orgId/users", middleware.UserAuth, organisationControllers.AddUserToOrganisation)
