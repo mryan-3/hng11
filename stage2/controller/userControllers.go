@@ -13,6 +13,7 @@ import (
 	"github.com/mryan-3/hng11/stage2/utils"
 	"github.com/mryan-3/hng11/stage2/validation"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm/logger"
 )
 
 // Create User
@@ -169,7 +170,8 @@ func LoginUser(c *fiber.Ctx) error {
 	var user models.User
 
 	result := database.DB.Db.First(&user, "email = ?", body.Email)
-    fmt.Println(result.Error)
+    result.Logger = logger.Default
+
 
     if result.Error != nil {
         return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
