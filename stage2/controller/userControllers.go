@@ -13,7 +13,6 @@ import (
 	"github.com/mryan-3/hng11/stage2/utils"
 	"github.com/mryan-3/hng11/stage2/validation"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm/logger"
 )
 
 // Create User
@@ -154,7 +153,7 @@ func LoginUser(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"status":     "Bad request",
+            "status":     "Bad request: body parse",
 			"message":    "Authentication failed",
 			"statusCode": http.StatusBadRequest,
 		})
@@ -170,12 +169,10 @@ func LoginUser(c *fiber.Ctx) error {
 	var user models.User
 
 	result := database.DB.Db.First(&user, "email = ?", body.Email)
-    result.Logger = logger.Default
-
 
     if result.Error != nil {
         return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
-            "status":     "Bad request",
+            "status":     "Bad request: no email",
             "message":    "Authentication failed",
             "statusCode": http.StatusUnauthorized,
         })
@@ -186,7 +183,7 @@ func LoginUser(c *fiber.Ctx) error {
 
 	if err != nil {
 		return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
-			"status":     "Bad request",
+            "status":     "Bad request: no passwo",
 			"message":    "Authentication failed",
 			"statusCode": http.StatusUnauthorized,
 		})
