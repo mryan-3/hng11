@@ -153,7 +153,7 @@ func LoginUser(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
-            "status":     "Bad request: body parse",
+            "status":     "Bad request",
 			"message":    "Authentication failed",
 			"statusCode": http.StatusBadRequest,
 		})
@@ -172,8 +172,8 @@ func LoginUser(c *fiber.Ctx) error {
 
     if result.Error != nil {
         return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
-            "status":     "Bad request: no email",
-            "message":    "Authentication failed" + result.Error.Error(),
+            "status":     "Bad request",
+            "message":    "Authentication failed",
             "statusCode": http.StatusUnauthorized,
         })
     }
@@ -183,7 +183,7 @@ func LoginUser(c *fiber.Ctx) error {
 
 	if err != nil {
 		return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
-            "status":     "Bad request: no passwo",
+            "status":     "Bad request",
 			"message":    "Authentication failed",
 			"statusCode": http.StatusUnauthorized,
 		})
