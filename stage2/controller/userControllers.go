@@ -154,7 +154,7 @@ func LoginUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
             "status":     "Bad request",
-			"message":    "Authentication failed",
+			"message":    "Parsing failed",
 			"statusCode": http.StatusBadRequest,
 		})
 	}
