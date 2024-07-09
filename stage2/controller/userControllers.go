@@ -167,13 +167,16 @@ func LoginUser(c *fiber.Ctx) error {
 	}
 
 	var user models.User
-	if err := database.DB.Db.Where("email = ?", body.Email).First(&user).Error; err != nil {
-		return c.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"status":     "Bad request",
-			"message":    "Authentication failed",
-			"statusCode": http.StatusBadRequest,
-		})
-	}
+
+	result := database.DB.Db.First(&user, "email = ?", body.Email)
+
+    if result.Error != nil {
+        return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
+            "status":     "Bad request",
+            "message":    "Authentication failed",
+            "statusCode": http.StatusUnauthorized,
+        })
+    }
 
 	// Compare password
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
