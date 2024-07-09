@@ -169,6 +169,7 @@ func LoginUser(c *fiber.Ctx) error {
 	var user models.User
 
 	result := database.DB.Db.First(&user, "email = ?", body.Email)
+    fmt.Println(result.Error)
 
     if result.Error != nil {
         return c.Status(http.StatusUnauthorized).JSON(&fiber.Map{
