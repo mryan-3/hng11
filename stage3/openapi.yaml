@@ -114,6 +114,271 @@ paths:
             '400':
               description: Invalid magic link
 
+    /auth/change-password:
+      put:
+        summary: Change Password
+        security:
+          - BearerAuth: []
+        description: Changes the user's password
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  oldPassword:
+                    type: string
+                  newPassword:
+                    type: string
+        responses:
+          '200':
+            description: Password changed successfully
+          '401':
+            description: User not authenticated
+
+
+      /auth/forgot-password:
+        post:
+          summary: Forgot Password
+          description: Sends a password reset link to the user's email
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+          responses:
+            '200':
+              description: Password reset link sent successfully
+            '400':
+              description: Invalid email address
+            '404':
+              description: User not found
+
+        /auth/reset-password:
+          put:
+            summary: Reset Password
+            description: Resets the user's password
+            requestBody:
+              required: true
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      resetToken:
+                        type: string
+                      password:
+                        type: string
+            responses:
+              '200':
+                description: Password reset successfully
+              '400':
+                description: Invalid reset token
+
+        /users/{userId}:
+          get:
+            summary: Get user details
+            description: Get a user by their ID
+            security:
+              - BearerAuth: []
+            parameters:
+              - name: userId
+                in: path
+                required: true
+                schema:
+                  type: string
+            responses:
+              '200':
+                description: User found successfully
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/User'
+              '404':
+                description: User not found
+
+          /users/{userId}:
+            put:
+              summary: Update user
+              description: Update a user by their ID
+              security:
+                - BearerAuth: []
+              parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        email:
+                          type: string
+              responses:
+                '200':
+                  description: User updated successfully
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/User'
+                '404':
+                  description: User not found
+
+
+        /organisations:
+          post:
+            summary: Create organisation
+            description: Create a new organisation
+            security:
+              - BearerAuth: []
+            requestBody:
+              required: true
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Organisation'
+            responses:
+              '201':
+                description: Organisation created successfully
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Organisation'
+              '400':
+                description: Invalid request
+
+
+          get:
+            summary: Get all organisations
+            description: Get all organisations
+            security:
+              - BearerAuth: []
+            responses:
+              '200':
+                description: Organisations found successfully
+                content:
+                  application/json:
+                    schema:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Organisation'
+              '404':
+                description: Organisations not found
+
+
+        /organisations/{organisationId}:
+          get:
+            summary: Get organisation details
+            description: Get a organisation by their ID
+            security:
+              - BearerAuth: []
+            parameters:
+              - name: organisationId
+                in: path
+                required: true
+                schema:
+                  type: string
+            responses:
+              '200':
+                description: Organisation found successfully
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Organisation'
+              '404':
+                description: Organisation not found
+
+            put:
+              summary: Update organisation
+              description: Update a organisation by their ID
+              security:
+                - BearerAuth: []
+              parameters:
+                - name: organisationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Organisation'
+              responses:
+                '200':
+                  description: Organisation updated successfully
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/Organisation'
+                '404':
+                  description: Organisation not found
+
+
+            delete:
+              summary: Delete organisation
+              description: Delete a organisation by their ID
+              security:
+                - BearerAuth: []
+              parameters:
+                - name: organisationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                '204':
+                  description: Organisation deleted successfully
+                '404':
+                  description: Organisation not found
+
+
+        /organisations/{organisationId}/users:
+          post:
+            summary: Add user to organisation
+            description: Add a user to an organisation
+            security:
+              - BearerAuth: []
+            parameters:
+              - name: organisationId
+                in: path
+                required: true
+                schema:
+                  type: string
+            requestBody:
+              required: true
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+            responses:
+              '200':
+                description: User added to organisation successfully
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Organisation'
+              '400':
+                description: Invalid request
+              '404':
+                description: Organisation not found
+
 components:
   schemas:
     RegisterUserRequest:
@@ -162,8 +427,22 @@ components:
           type: string
         password:
           type: string
+
+    Organisation:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+
+
   securitySchemes:
-    bearerHTTPAuth:
+    BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
