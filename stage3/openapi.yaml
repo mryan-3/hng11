@@ -471,12 +471,27 @@ paths:
               post:
                 summary: Handle payment provider webhook
                 description: Webhook
+                security:
+                  -webhookSignature: []
                 requestBody:
                   required: true
                   content:
                     application/json:
                       schema:
-                        $ref: '#/components/schemas/PaymentRequest'
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            description: The ID of the webhook event
+                          type:
+                            type: string
+                            description: The type of webhook event
+                          data:
+                            type: object
+                            description: The data of the webhook event
+                            $ref: '#/components/schemas/PaymentResponse'
+
+
                 responses:
                   '200':
                     description: Payment created successfully
@@ -587,6 +602,8 @@ components:
           type: string
         description:
           type: string
+        customer:
+          $ref: '#/components/schemas/User'
 
     PaymentRequest:
       type: object
@@ -616,6 +633,8 @@ components:
           type: string
         description:
           type: string
+        customer:
+          $ref: '#/components/schemas/User'
         created_at:
           type: string
           format: date-time
@@ -625,3 +644,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Webhook-Signature
