@@ -379,6 +379,114 @@ paths:
               '404':
                 description: Organisation not found
 
+
+        /organisations/{organisationId}/users/{userId}:
+          delete:
+            summary: Remove user from organisation
+            description: Remove a user from an organisation
+            security:
+              - BearerAuth: []
+            parameters:
+              - name: organisationId
+                in: path
+                required: true
+                schema:
+                  type: string
+              - name: userId
+                in: path
+                required: true
+                schema:
+                  type: string
+            responses:
+              '200':
+                description: User removed from organisation successfully
+              '404':
+                description: Organisation or user not found
+
+
+        /emails/send:
+          post:
+            summary: Send email
+            description: Send an email
+            requestBody:
+              required: true
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Email'
+            responses:
+              '200':
+                description: Email sent successfully
+              '400':
+                description: Invalid request
+
+
+        /payments/create:
+          post:
+            summary: Create payment
+            description: Create a payment
+            security:
+              - BearerAuth: []
+            requestBody:
+              required: true
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/PaymentRequest'
+            responses:
+              '201':
+                description: Payment created successfully
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/PaymentResponse'
+              '400':
+                description: Invalid request
+
+
+          /payments/{paymentId}:
+            get:
+              summary: Get payment details
+              description: Get a payment
+              security:
+                - BearerAuth: []
+              parameters:
+                - name: paymentId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                '200':
+                  description: Payment found successfully
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/PaymentResponse'
+                '404':
+                  description: Payment not found
+
+
+            /payments/webhook:
+              post:
+                summary: Handle payment provider webhook
+                description: Webhook
+                requestBody:
+                  required: true
+                  content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/PaymentRequest'
+                responses:
+                  '200':
+                    description: Payment created successfully
+                    content:
+                      application/json:
+                        schema:
+                          $ref: '#/components/schemas/PaymentResponse'
+                  '400':
+                    description: Invalid request
+
 components:
   schemas:
     RegisterUserRequest:
@@ -440,6 +548,77 @@ components:
           items:
             $ref: '#/components/schemas/User'
 
+    Email:
+      type: object
+      properties:
+        to:
+          type: string
+        from:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+
+
+    EmailTemplate:
+      type: object
+      properties:
+        template_id:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        description:
+          type: string
+
+    PaymentRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+        provider:
+          type: string
+        description:
+          type: string
+
+
+    PaymentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
 
   securitySchemes:
     BearerAuth:
