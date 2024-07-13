@@ -1,0 +1,169 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI
+  version: 1.0.0
+  description: OpenAPI
+  termsOfService: https://github.com/11
+servers:
+  - url: https://api.hng11.dev
+    description: API URL
+paths:
+  /auth/register:
+    post:
+      summary: Register
+      description: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request
+        '409':
+          description: User already exists
+
+  /auth/login:
+    post:
+      summary: Login
+      description: Login a user with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUserRequest'
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+
+# social authentication
+    /auth/{provider}/callback:
+      get:
+        summary: Callback
+        description: Handles the callback from the social authentication provider
+        parameters:
+          - name: provider
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          '200':
+            description: User authenticated successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/AuthResponse'
+          '400':
+            description: Invalid callback request
+          '401':
+            description: Invalid credentials
+
+# magic link authentication
+    /auth/magic-link:
+      post:
+        summary: Magic Link
+        description: Sends a magic link to the user's email for verification
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MagicLinkRequest'
+        responses:
+          '200':
+            description: Magic link sent successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/AuthResponse'
+          '401':
+            description: Invalid email address
+
+      /auth/magic-link/verify:
+        get:
+          summary: Verify
+          description: Verifies the magic link
+          parameters:
+            - name: verify-token
+              in: query
+              required: true
+              schema:
+                type: string
+          responses:
+            '200':
+              description: Magic link verified successfully
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/AuthResponse'
+            '400':
+              description: Invalid magic link
+
+components:
+  schemas:
+    RegisterUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    LoginUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    MagicLinkRequest:
+          type: object
+          properties:
+            email:
+              type: string
+
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+  securitySchemes:
+    bearerHTTPAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
